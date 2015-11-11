@@ -38,6 +38,9 @@ class Saisei {
 
   const DEBUG = false;
 
+  const RUN_CFG = '/rest/top/configurations/running';
+
+
   /**
    * Class constructor accepting the instance URL, port, username, and password
    *
@@ -62,7 +65,7 @@ class Saisei {
   * @link https://$url:$port/rest/top/configurations/running/interfaces
   */
   public function getInterfaces($options = null){
-    return $this->GET("/rest/top/configurations/running/interfaces/")->asJSON();
+    return $this->GET(Saisei::RUN_CFG . "/interfaces/")->asJSON();
   }
 
   /**
@@ -73,9 +76,73 @@ class Saisei {
    * @link  https://$url:$port/rest/top/configurations/running/interfaces/$iface
    */
   public function getInterface($iface){
-    return $this->GET("/rest/top/configurations/running/interfaces/" . $iface)->asJSON();
+    return $this->GET(Saisei::RUN_CFG . "/interfaces/" . $iface)->asJSON();
   }
 
+
+  /**
+  * Gets a list of hosts
+  *
+  * @param array $options
+  * @return mixed
+  * @link https://$url:$port/rest/top/configurations/running/fibs/fib0/hosts/
+  */
+  public function getHosts($options = null){
+    return $this->GET(Saisei::RUN_CFG . "/fibs/fib0/hosts/")->asJSON();
+  }
+
+
+  /**
+   * Gets a host
+   *
+   * @param string $host
+   * @return mixed
+   * @link  https://$url:$port/rest/top/configurations/running/interfaces/$iface
+   */
+   public function getHost($host){
+     return $this->GET(Saisei::RUN_CFG . "/fibs/fib0/hosts/" . $host)->asJSON();
+   }
+
+   /**
+   * Gets a list of users
+   *
+   * @param array $options
+   * @return mixed
+   * @link https://$url:$port/rest/top/configurations/running/users/
+   */
+   public function getUsers($options = null){
+     return $this->GET(self::RUN_CFG . "/users/")->asJSON();
+   }
+
+
+   /**
+    * Gets a user
+    *
+    * @param string $user
+    * @return mixed
+    * @link  https://$url:$port/rest/top/configurations/running/users/$user
+    */
+    public function getUser($user) {
+      return $this->GET(Saisei::RUN_CFG . "/users/" . $user)->asJSON();
+    }
+
+    public function addUser($user){
+      $url_path = Saisei::RUN_CFG . "/users/";
+      $request = null;
+
+      #if(isset($user->name) && $user->name != ""){
+        #$request = $this->PUT($url_path);
+      #} else {
+        $request = $this->POST($url_path);
+      #}
+
+      return $request->body($user)->asJSON();
+    }
+
+    public function deleteUser($user){
+      $this->DELETE(Saisei::RUN_CFG . "/users/" . $user)->asJSON();
+      return true;
+    }
 
 
 ################################################################################
@@ -129,7 +196,7 @@ class Saisei {
    *  - Or implicitly execute: $request->asJSON();
    */
   class SaiseiRequest {
-
+    public $verbose;
     private $curl;
     private $url;
     private $port;
@@ -165,7 +232,7 @@ class Saisei {
      * @param string $url_path
      * @throws Exception
      */
-    function __construct($method, $url, $port, $url_path, $username, $password){
+    function __construct($method, $url, $port, $url_path, $username, $password, $headers = array()){
       $this->curl = curl_init();
       $this->url = $url;
       $this->port = $port;
@@ -173,7 +240,9 @@ class Saisei {
       $this->username = $username;
       $this->password = $password;
       $this->querystrings = array();
+      $this->headers = $headers;
       $this->body = null;
+
       switch($method){
       case "GET":
         // GET is the default
@@ -241,10 +310,11 @@ class Saisei {
       if($errno != 0){
         throw new Exception("HTTP Error (" . $errno . "): " . curl_error($this->curl));
       }
-      $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
-      if(!($status_code == 200 || $status_code == 201 || $status_code == 202)){
-        throw new Exception("Bad HTTP status code: " . $status_code);
-      }
+
+      // $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+      // if(!($status_code == 200 || $status_code == 201 || $status_code == 202)){
+      //   throw new Exception($response);
+      // }
       return $response;
     }
     /**
@@ -253,11 +323,11 @@ class Saisei {
      * @throws Exception
      * @return mixed
      */
-    public function asJSON(){
-      $data = json_decode($this->asString());
+    public function asObject(){
+      $data = json_encode($this->asJSON());
       $errno = json_last_error();
       if($errno != JSON_ERROR_NONE){
-        throw new Exception("Error encountered decoding JSON: " . json_last_error_msg());
+        throw new Exception("Error encountered encoding JSON: " . json_last_error_msg());
       }
       return $data;
     }
@@ -276,6 +346,7 @@ class Saisei {
       }
       curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);
       $this->headers[] = "Content-Type: application/json";
+
       return $this;
     }
     /**
