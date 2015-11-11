@@ -21,25 +21,6 @@
 
     BASIC USE PATTERNS:
 
-    CREATE/UPDATE ACTIONS
-
-    These methods expect an object containing valid data fields for the object.
-    They will return a dictionary containing the object
-    as stored on the server (if successful)
-    or raise an exception if the create/update request fails.
-    You indicate whether you want to create a new item
-    by setting the record id to 0 or omitting it.
-
-    To obtain sample objects, you can do the following:
-
-    $contact = $i->addContact('sample');
-    $event = $i->addEvent('sample');
-    $organization = $i->addOrganization('sample');
-    $project = $i->addProject('sample');
-
-    This will return a random item from your account,
-    so you can see what fields are required,
-    along with representative field values.
 */
 
 
@@ -55,6 +36,7 @@ class Saisei {
   private $username;
   private $password;
 
+  const DEBUG = false;
 
   /**
    * Class constructor accepting the instance URL, port, username, and password
@@ -212,28 +194,50 @@ class Saisei {
 
       // Set up authentication.
       curl_setopt($this->curl, CURLOPT_USERPWD, $this->username . ":" . $this->password);
+
+      // This may be useful for debugging
+      if (Saisei::DEBUG == true) {
+        curl_setopt($this->curl, CURLOPT_VERBOSE, true);
+        $this->verbose = fopen('php://temp', 'w+');
+        curl_setopt($this->curl, CURLOPT_STDERR, $this->verbose);
+      }
+
+      // Just assume that it's the right box, and ignore invalid SSL.
+      curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, false);
     }
+
     /**
      * Get executed request response
      *
      * @throws Exception
      * @return string
      */
-    public function asString(){
-      // This may be useful for debugging
-      curl_setopt($this->curl, CURLOPT_VERBOSE, true);
-
-      // Just assume that it's the right box.
-      curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, false);
+    public function asJSON(){
 
       $url =  "https://" . $this->url . ':' . $this->port . $this->url_path . $this->buildQueryString();
       curl_setopt($this->curl, CURLOPT_URL, $url);
-
-      // Enable headers if needed.
-      //curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
+      curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
 
       $response = curl_exec($this->curl);
       $errno = curl_errno($this->curl);
+
+      if (Saisei::DEBUG == true) {
+        if ($response === FALSE) {
+            printf("cUrl error (#%d): %s<br>\n", curl_errno($this->curl),
+                   htmlspecialchars(curl_error($this->curl)));
+        }
+
+        rewind($this->verbose);
+        $verboseLog = stream_get_contents($this->verbose);
+
+        echo "Verbose information:\n<pre>", htmlspecialchars($verboseLog), "</pre>\n";
+        echo "Error: " . $errorno;
+        echo "Info: ";
+        print_r (curl_getinfo($this->curl));
+
+      }
+
+
       if($errno != 0){
         throw new Exception("HTTP Error (" . $errno . "): " . curl_error($this->curl));
       }
