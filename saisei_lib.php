@@ -36,7 +36,7 @@ class Saisei {
   private $username;
   private $password;
 
-  const DEBUG = false;
+  const DEBUG = true;
 
   const RUN_CFG = '/rest/top/configurations/running';
 
@@ -49,7 +49,7 @@ class Saisei {
    * @param string $password
    * @param int    $port
    */
-  public function __construct($url, $username, $password, $port = 5029) {
+  public function __construct($url, $username, $password, $port = 5000) {
     $this->url = $url;
     $this->username = $username;
     $this->password = $password;
@@ -62,7 +62,7 @@ class Saisei {
   *
   * @param array $options
   * @return mixed
-  * @link https://$url:$port/rest/top/configurations/running/interfaces
+  * @link http://$url:$port/rest/top/configurations/running/interfaces
   */
   public function getInterfaces($options = null){
     return $this->GET(Saisei::RUN_CFG . "/interfaces/")->asJSON();
@@ -73,7 +73,7 @@ class Saisei {
    *
    * @param string $iface
    * @return mixed
-   * @link  https://$url:$port/rest/top/configurations/running/interfaces/$iface
+   * @link  http://$url:$port/rest/top/configurations/running/interfaces/$iface
    */
   public function getInterface($iface){
     return $this->GET(Saisei::RUN_CFG . "/interfaces/" . $iface)->asJSON();
@@ -85,7 +85,7 @@ class Saisei {
   *
   * @param array $options
   * @return mixed
-  * @link https://$url:$port/rest/top/configurations/running/fibs/fib0/hosts/
+  * @link http://$url:$port/rest/top/configurations/running/fibs/fib0/hosts/
   */
   public function getHosts($options = null){
     return $this->GET(Saisei::RUN_CFG . "/fibs/fib0/hosts/")->asJSON();
@@ -97,10 +97,30 @@ class Saisei {
    *
    * @param string $host
    * @return mixed
-   * @link  https://$url:$port/rest/top/configurations/running/interfaces/$iface
+   * @link  http://$url:$port/rest/top/configurations/running/interfaces/$iface
    */
    public function getHost($host){
      return $this->GET(Saisei::RUN_CFG . "/fibs/fib0/hosts/" . $host)->asJSON();
+   }
+
+   public function modifyHost($host, $data){
+    $url_path = Saisei::RUN_CFG . "/fibs/fib0/hosts/" . $host;
+    $request = null;
+
+    $request = $this->PUT($url_path);
+    return $request->body($data)->asJSON();
+   }
+
+   public function addHost($host){
+     $url_path = Saisei::RUN_CFG . "/fibs/fib0/hosts/";
+     $request = null;
+     
+     $request = $this->POST($url_path);
+     return $request->body($host)->asJSON();
+   }
+   
+   public function deleteHost($host){
+     return $this->DELETE(Saisei::RUN_CFG . "/fibs/fib0/hosts/" . $host)->asJSON();
    }
 
    /**
@@ -108,7 +128,7 @@ class Saisei {
    *
    * @param array $options
    * @return mixed
-   * @link https://$url:$port/rest/top/configurations/running/users/
+   * @link http://$url:$port/rest/top/configurations/running/users/
    */
    public function getUsers($options = null){
      return $this->GET(self::RUN_CFG . "/users/")->asJSON();
@@ -120,7 +140,7 @@ class Saisei {
     *
     * @param string $user
     * @return mixed
-    * @link  https://$url:$port/rest/top/configurations/running/users/$user
+    * @link  http://$url:$port/rest/top/configurations/running/users/$user
     */
     public function getUser($user) {
       return $this->GET(Saisei::RUN_CFG . "/users/" . $user)->asJSON();
@@ -130,19 +150,117 @@ class Saisei {
       $url_path = Saisei::RUN_CFG . "/users/";
       $request = null;
 
-      #if(isset($user->name) && $user->name != ""){
-        #$request = $this->PUT($url_path);
-      #} else {
+      // if(isset($user->name) && $user->name != ""){
+      //   $request = $this->PUT($url_path);
+      // } else {
         $request = $this->POST($url_path);
-      #}
+      //}
 
       return $request->body($user)->asJSON();
+    }
+
+    public function modifyUser($user, $data){
+     $url_path = Saisei::RUN_CFG . "/users/" . $user;
+     $request = null;
+
+     $request = $this->PUT($url_path);
+
+     return $request->body($data)->asJSON();
     }
 
     public function deleteUser($user){
       $this->DELETE(Saisei::RUN_CFG . "/users/" . $user)->asJSON();
       return true;
     }
+
+
+    /**
+    * Gets a list of Policies
+    *
+    * @param array $options
+    * @return mixed
+    * @link http://$url:$port/rest/top/configurations/running/fibs/fib0/hosts/
+    */
+    public function getPolicies($options = null){
+      return $this->GET(Saisei::RUN_CFG . "/epms/")->asJSON();
+    }
+
+
+    /**
+     * Gets a host
+     *
+     * @param string $host
+     * @return mixed
+     * @link  http://$url:$port/rest/top/configurations/running/interfaces/$iface
+     */
+     public function getPolicy($direction){
+       return $this->GET(Saisei::RUN_CFG . "/epms/epm1/policies/" . $host)->asJSON();
+     }
+
+     public function addPolicy($policy){
+       $url_path = Saisei::RUN_CFG . "/$policy/";
+       $request = null;
+
+       if(isset($policy->id) && $policy->id != ""){
+         $request = $this->PUT($url_path);
+       } else {
+         $request = $this->POST($url_path);
+       }
+
+       return $request->body($user)->asJSON();
+     }
+
+     public function deletePolicy($user){
+       $this->DELETE(Saisei::RUN_CFG . "/users/" . $user)->asJSON();
+       return true;
+     }
+
+
+     /**
+     * Gets a list of FlowClasses
+     *
+     * @param array $options
+     * @return mixed
+     * @link http://$url:$port/rest/top/configurations/running/fibs/fib0/hosts/
+     */
+     public function getFlowClasses($options = null){
+       return $this->GET(Saisei::RUN_CFG . "/ifcs/")->asJSON();
+     }
+
+
+     /**
+      * Gets a FlowClass
+      *
+      * @param string $host
+      * @return mixed
+      * @link  http://$url:$port/rest/top/configurations/running/interfaces/$iface
+      */
+      public function getFlowClass($flowClass){
+        return $this->GET(Saisei::RUN_CFG . "/ifcs/" . $flowClass)->asJSON();
+      }
+
+
+      public function addFlowClass($policy){
+        $url_path = Saisei::RUN_CFG . "/$policy/";
+        $request = null;
+
+        if(isset($policy->id) && $policy->id != ""){
+          $request = $this->PUT($url_path);
+        } else {
+          $request = $this->POST($url_path);
+        }
+
+        return $request->body($user)->asJSON();
+      }
+
+      public function deleteFlowClass($user){
+        $this->DELETE(Saisei::RUN_CFG . "/ifcs/" . $user)->asJSON();
+        return true;
+      }
+
+      public function getAny($url){
+        return $this->GET($url)->asJSON();
+      }
 
 
 ################################################################################
@@ -273,6 +391,7 @@ class Saisei {
 
       // Just assume that it's the right box, and ignore invalid SSL.
       curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, false);
+      curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, false);
     }
 
     /**
@@ -283,7 +402,7 @@ class Saisei {
      */
     public function asJSON(){
 
-      $url =  "https://" . $this->url . ':' . $this->port . $this->url_path . $this->buildQueryString();
+      $url =  "http://" . $this->url . ':' . $this->port . $this->url_path . $this->buildQueryString();
       curl_setopt($this->curl, CURLOPT_URL, $url);
       curl_setopt($this->curl, CURLOPT_HTTPHEADER, $this->headers);
 
@@ -292,14 +411,14 @@ class Saisei {
 
       if (Saisei::DEBUG == true) {
         if ($response === FALSE) {
-            printf("cUrl error (#%d): %s<br>\n", curl_errno($this->curl),
+            printf("cURL error (#%d): %s<br>\n", curl_errno($this->curl),
                    htmlspecialchars(curl_error($this->curl)));
         }
 
         rewind($this->verbose);
         $verboseLog = stream_get_contents($this->verbose);
-
-        echo "Verbose information:\n<pre>", htmlspecialchars($verboseLog), "</pre>\n";
+        echo "URL: " . $url;
+        echo "\nVerbose information:\n", htmlspecialchars($verboseLog), "\n-----------------------------\n\n\n";
         echo "Error: " . $errorno;
         echo "Info: ";
         print_r (curl_getinfo($this->curl));
@@ -311,10 +430,11 @@ class Saisei {
         throw new Exception("HTTP Error (" . $errno . "): " . curl_error($this->curl));
       }
 
-      // $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
-      // if(!($status_code == 200 || $status_code == 201 || $status_code == 202)){
-      //   throw new Exception($response);
-      // }
+      $status_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
+      echo "\nStatus Code: $status_code\n";
+      //if(!($status_code == 200 || $status_code == 201 || $status_code == 202)){
+      //  throw new Exception($response);
+      //}
       return $response;
     }
     /**
@@ -346,6 +466,10 @@ class Saisei {
       }
       curl_setopt($this->curl, CURLOPT_POSTFIELDS, $data);
       $this->headers[] = "Content-Type: application/json";
+
+      if (Saisei::DEBUG == true) {
+        echo "DATA: ".$data."\n";
+      }
 
       return $this;
     }
